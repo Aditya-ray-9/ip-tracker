@@ -52,7 +52,7 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        #send-button {
+        #send-button, .quick-button {
             padding: 10px 20px;
             margin-left: 10px;
             border: none;
@@ -61,8 +61,11 @@
             color: white;
             cursor: pointer;
         }
-        #send-button:hover {
+        #send-button:hover, .quick-button:hover {
             background-color: #0056b3;
+        }
+        .quick-buttons {
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -70,6 +73,10 @@
 
 <div id="chat-container">
     <div id="chat-box"></div>
+    <div class="quick-buttons">
+        <button class="quick-button" onclick="sendQuickResponse('What is the time?')">What is the time?</button>
+        <button class="quick-button" onclick="sendQuickResponse('Tell me a joke')">Tell me a joke</button>
+    </div>
     <div id="input-container">
         <input type="text" id="user-input" placeholder="Type your message..." />
         <button id="send-button">Send</button>
@@ -80,6 +87,7 @@
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
+    let chatHistory = [];
 
     function appendMessage(text, type) {
         const messageDiv = document.createElement('div');
@@ -89,6 +97,10 @@
         chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
     }
 
+    function logHistory(userText, botResponse) {
+        chatHistory.push({ user: userText, bot: botResponse });
+    }
+
     function getBotResponse(userText) {
         const lowerText = userText.toLowerCase();
 
@@ -96,8 +108,8 @@
             return "Hello! How can I help you today?";
         } else if (lowerText.includes('time')) {
             return new Date().toLocaleTimeString();
-        } else if (lowerText.includes('wikipedia')) {
-            return "What topic would you like to know about?";
+        } else if (lowerText.includes('joke')) {
+            return "Why don't scientists trust atoms? Because they make up everything!";
         } else {
             return fetchWikipedia(lowerText);
         }
@@ -118,20 +130,29 @@
             .catch(() => "Sorry, something went wrong while fetching data.");
     }
 
+    function sendQuickResponse(response) {
+        userInput.value = response;
+        sendButton.click();
+    }
+
     sendButton.addEventListener('click', () => {
         const userText = userInput.value.trim();
         if (userText) {
             appendMessage(userText, 'user');
-            userInput.value = '';
             const botResponse = getBotResponse(userText);
 
             if (typeof botResponse === 'string') {
-                setTimeout(() => appendMessage(botResponse, 'bot'), 500);
+                appendMessage(botResponse, 'bot');
+                logHistory(userText, botResponse);
             } else {
                 botResponse.then(response => {
-                    setTimeout(() => appendMessage(response, 'bot'), 500);
+                    appendMessage(response, 'bot');
+                    logHistory(userText, response);
+                }).catch(err => {
+                    appendMessage("Sorry, an error occurred.", 'bot');
                 });
             }
+            userInput.value = '';
         }
     });
 
