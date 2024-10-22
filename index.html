@@ -67,7 +67,6 @@
     </style>
 </head>
 <body>
-your ip is leaked
 
 <div id="chat-container">
     <div id="chat-box"></div>
@@ -91,13 +90,32 @@ your ip is leaked
     }
 
     function getBotResponse(userText) {
-        const responses = {
-            "hi": "Hello! How can I assist you today?",
-            "how are you?": "I'm just a program, but thanks for asking!",
-            "what is your name?": "I'm your friendly chatbot!",
-            "bye": "Goodbye! Have a great day!",
-        };
-        return responses[userText.toLowerCase()] || "Sorry, I don't understand that.";
+        const lowerText = userText.toLowerCase();
+
+        if (lowerText.includes('hello') || lowerText.includes('hi')) {
+            return "Hello! How can I help you today?";
+        } else if (lowerText.includes('time')) {
+            return new Date().toLocaleTimeString();
+        } else if (lowerText.includes('wikipedia')) {
+            return "What topic would you like to know about?";
+        } else {
+            return fetchWikipedia(lowerText);
+        }
+    }
+
+    function fetchWikipedia(query) {
+        return fetch(`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const page = data.query.pages;
+                const pageId = Object.keys(page)[0];
+                if (pageId !== '-1') {
+                    return page[pageId].extract;
+                } else {
+                    return "Sorry, I couldn't find any information on that topic.";
+                }
+            })
+            .catch(() => "Sorry, something went wrong while fetching data.");
     }
 
     sendButton.addEventListener('click', () => {
@@ -106,7 +124,14 @@ your ip is leaked
             appendMessage(userText, 'user');
             userInput.value = '';
             const botResponse = getBotResponse(userText);
-            setTimeout(() => appendMessage(botResponse, 'bot'), 500); // Simulate response delay
+
+            if (typeof botResponse === 'string') {
+                setTimeout(() => appendMessage(botResponse, 'bot'), 500);
+            } else {
+                botResponse.then(response => {
+                    setTimeout(() => appendMessage(response, 'bot'), 500);
+                });
+            }
         }
     });
 
